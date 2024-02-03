@@ -71,14 +71,56 @@ Ebpf programs are loaded to kernel and are responsible for tracking and filterin
 
 ## Communication between kernel and user space
 Communication between kernel and user space is done via bpf maps.
-
-# User experience
+Map type and data structure is ebpf-program specific.
 
 # Feature capabalities
-    - anomalies detection
-    - suggestion based on traffic
-    - offer profiling, statistics
+The issue we aim to address is the identification and blocking of undesired network connections. In this context, we define a network connection as a L3 connection between hosts in an IPv4 or IPv6 network.
+
+We will primarily concentrate on the most frequently used L4 protocols, which include TCP, UDP, and ICMP. Additionally, we will consider L7 protocols such as HTTP, HTTPS, DNS, SSH, and others.
+
+Following is a list of features that the TOOL system will support for filtering network connections:
+
+## L3
+    - IP filtering
+    - IP ranges
+
+## L4
+### TCP
+    - Port ranges
+    - Connection duration
+### UDP
+    - Port ranges
+### ICMP
+    - ICMP types
+    - ICMP codes
+
+## L7
+### HTTP
+    - Domain
+    - Asterisk for domains
+    - Subdomains
+    - Path
+    - HTTP methods
+    - HTTP headers
+    - Protocol version
+### HTTPS
+    - CA filtering
+    - TLS version
+
+### DNS
+    - Domain
+    - enforce DNS over TLS
+
+### SSH
+    - incomming connections filtering by IP or public key
+    - outgoing connections filtering by IP (IP range) or hostname
+
+### Other
+    - anomalies detection based on previous traffic
+    - profiling, statistics
+
 # Technical implementation details
+
 
 # Limitation and Constraints
 
