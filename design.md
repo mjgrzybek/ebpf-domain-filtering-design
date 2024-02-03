@@ -33,20 +33,44 @@ the TOOL system runs in "detect" mode for passive monitoring or "prevent" mode f
     - reasonable defaults
     - documented features with examples
     - playground/online editor like [editor.networkpolicy.io](editor.networkpolicy.io)
+- security
+    - only priviledged user can access audit.log or daemon configuration
+- error handling
+    - user decides what to do with errors
+    - drop packets by default?
+- scalability
+    - should be able to handle high traffic
+    - should be able to handle high number of rules
 
 # System overview
 ![Alt text](./system-overview.png)
 TOOL leverages ebpf therefore it's split into two parts - user space and kernel space.
 
-## User space daemon
+## User space
 Daemon running in userspace is responsible for ebpf programs orchestration and integration with OS, user and 3rd party software.
 
+### Configuration processor
+Module responsible for processing the configuration.
+It creates rules for the engine and provides configuration to other modules.
 
+### Engine
+The Engine manages the execution of ebpf programs, taking its input from rules established by the Configuration Processor.
 
+The TOOL includes ebpf program templates. These templates are populated with specific values derived from the rules, after which they are compiled and loaded into the kernel.
+
+❗ ADD EXAMPLE SOURCE CODE HERE
+
+### otel exporter
+OpenTelemetry exporter is responsible for exporting traces, metrics and logs to the OpenTelemetry collector.
+ 
+### event publisher
+Event publisher is responsible allowing 3rd party software to subscribe for events from us. Event subscriber can be any software that can consume events from us, so user is responsible for providing an adapter for that software.
 
 ## Kernel space - ebpf programs
+Ebpf programs are loaded to kernel and are responsible for tracking and filtering network traffic.
 
 ## Communication between kernel and user space
+Communication between kernel and user space is done via bpf maps.
 
 # User experience
 
