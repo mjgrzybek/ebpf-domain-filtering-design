@@ -84,7 +84,7 @@ Map type and data structure is ebpf-program (capabality) specific.
 # Feature capabalities
 The issue we aim to address is the identification and blocking of undesired network connections. In this context, we define a network connection as a L3 connection between hosts in an IPv4 or IPv6 network.
 
-We will primarily concentrate on the most frequently used L4 protocols, which include TCP, UDP, and ICMP. Additionally, we will consider L7 protocols such as HTTP, HTTPS, DNS, SSH.
+We will primarily concentrate on the most frequently used L4 protocols, which include TCP, UDP. Additionally, we will consider L7 protocols such as HTTP, HTTPS, DNS, SSH.
 
 Following is a list of features that the TOOL will support for filtering network connections:
 
@@ -98,9 +98,6 @@ Following is a list of features that the TOOL will support for filtering network
     - Connection duration
 ### UDP
     - Port ranges
-### ICMP
-    - ICMP types
-    - ICMP codes
 
 ## L7
 ### HTTP
@@ -226,7 +223,6 @@ Works only for incomming traffic. It's the fastest way to process packets becaus
 - `iphdr` - IP header
 - `tcphdr` - TCP header
 - `udphdr` - UDP header
-- `icmphdr` - ICMP header
 
 It allows to realively easily filter traffic based on L3 and L4 criteria.
 
