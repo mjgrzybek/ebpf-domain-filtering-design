@@ -32,7 +32,7 @@ the TOOL system runs in "detect" mode for passive monitoring or "prevent" mode f
     - should allow users effectivly configure the system against potential threats
     - reasonable defaults
     - documented features with examples
-    - playground/online editor like [editor.networkpolicy.io](editor.networkpolicy.io)
+    - playground/online editor like [editor.networkpolicy.io](http://editor.networkpolicy.io)
 - Security
     - only priviledged user can access audit.log or daemon configuration
     - should not alter packets' content
