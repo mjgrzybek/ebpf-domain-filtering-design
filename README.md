@@ -59,7 +59,7 @@ It creates rules for the engine and provides configuration to other modules.
 ### Engine
 The Engine manages the execution of ebpf programs, taking its input from rules established by the Configuration Processor.
 
-The TOOL is shipped with predefined set of capabilities. Capability is a pair of ebpf program templates and Engine logic. 
+The TOOL is shipped with predefined set of capabilities. Capability is a pair of ebpf program templates and Engine (user space) logic. 
 
 Templates are populated with specific values derived from the rules, after which they are compiled and loaded into the kernel.
 
