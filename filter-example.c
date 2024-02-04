@@ -40,11 +40,11 @@ int filter_ip(struct xdp_md *ctx) {
     ip = get_source_ip(iph);
     is_allowed = is_ip_allowed(ip);
 
-    struct event data = {
+    struct event event = {
         .ip_src = ip,
         .decision = is_allowed ? ALLOWED : BLOCKED,
     };
-    output.perf_submit(ctx, &data, sizeof(data)); 
+    output.perf_submit(ctx, &event, sizeof(event)); 
 
     return is_allowed ? XDP_PASS : XDP_DROP;
 }

@@ -74,7 +74,7 @@ Ebpf programs are loaded to kernel and are responsible for tracking and filterin
 
 Packet drops should happen on ebpf program level when possible.
 
-Moving logic to user space is acceptable when it's not possible to process packet in ebpf program.
+Moving logic to user space is acceptable when it's not possible to calculate decision based on single packet content in ebpf program.
 
 ## Communication between kernel and user space
 Communication between kernel and user space is done via bpf maps.
@@ -198,11 +198,11 @@ int filter_ip(struct xdp_md *ctx) {
     ip = get_source_ip(iph);
     is_allowed = is_ip_allowed(ip);
 
-    struct event data = {
+    struct event event = {
         .ip_src = ip,
         .decision = is_allowed ? ALLOWED : BLOCKED,
     };
-    output.perf_submit(ctx, &data, sizeof(data)); 
+    output.perf_submit(ctx, &event, sizeof(event)); 
 
     return is_allowed ? XDP_PASS : XDP_DROP;
 }
