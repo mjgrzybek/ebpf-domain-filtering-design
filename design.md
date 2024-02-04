@@ -6,7 +6,7 @@ By leveraging the power of eBPF, the TOOL system provides granular control over 
 the TOOL system runs in "detect" mode for passive monitoring or "prevent" mode for proactive blocking against unauthorized access and malicious activities.
 
 # Requirements analysis
-- two modes
+- Two modes
     - detect mode
         - understand and inspect the network behavior 
     - prevent mode
@@ -33,21 +33,24 @@ the TOOL system runs in "detect" mode for passive monitoring or "prevent" mode f
     - reasonable defaults
     - documented features with examples
     - playground/online editor like [editor.networkpolicy.io](editor.networkpolicy.io)
-- security
+- Security
     - only priviledged user can access audit.log or daemon configuration
-- error handling
+    - should not alter packets' content
+- Error handling
     - user decides what to do with errors
     - drop packets by default?
-- scalability
+- Scalability
     - should be able to handle high traffic
     - should be able to handle high number of rules
 
 # System overview
-![Alt text](./system-overview.png)
+![System overview](./system-overview.png)
 TOOL leverages ebpf therefore it's split into two parts - user space and kernel space.
 
 ## User space
 Daemon running in userspace is responsible for ebpf programs orchestration and integration with OS, user and 3rd party software.
+
+It requires capabilities: `CAP_BPF`, `CAP_PERFMON`, `CAP_NET_ADMIN`, `CAP_SYS_PTRACE`.
 
 ### Configuration processor
 Module responsible for processing the configuration.
@@ -69,9 +72,14 @@ Event publisher is responsible allowing 3rd party software to subscribe for even
 ## Kernel space - ebpf programs
 Ebpf programs are loaded to kernel and are responsible for tracking and filtering network traffic.
 
+Packet drops should happen on ebpf program level when possible.
+
+Moving logic to user space is acceptable when it's not possible to process packet in ebpf program.
+
 ## Communication between kernel and user space
 Communication between kernel and user space is done via bpf maps.
-Map type and data structure is ebpf-program specific.
+
+Map type and data structure is ebpf-program (capabality) specific.
 
 # Feature capabalities
 The issue we aim to address is the identification and blocking of undesired network connections. In this context, we define a network connection as a L3 connection between hosts in an IPv4 or IPv6 network.
@@ -97,7 +105,8 @@ Following is a list of features that the TOOL will support for filtering network
 ## L7
 ### HTTP
     - Domain
-    - Asterisk for domains
+    - Asterisk for domains?
+        - no, it's a security threat. Attacker could exploit it by registering a domain matching wildcard, e.g.: `*facebook*` -> `baitfacebook.co`
     - Subdomains
     - Path
     - HTTP methods
@@ -108,7 +117,8 @@ Following is a list of features that the TOOL will support for filtering network
     - TLS version
 
 ### DNS
-    - Domain
+    - Domain allowlist
+    - DNS server allowlist
     - DNS over TLS
 
 ### SSH
@@ -147,8 +157,11 @@ The Engine is responsible for:
 It will take its input from rules established by the Configuration Processor.
 
 For example, for a rule that blocks all connections from a specific IP address, an ebpf program will emit an event when a connection to that IP address is detected.  
+
 ```c
-enum event_type {
+BPF_PERF_OUTPUT(output); 
+ 
+ enum decision {
     DETECTED, // connection detected but prevention mode is not enabled
     ALLOWED,
     BLOCKED,
@@ -157,8 +170,48 @@ enum event_type {
 // Structure to hold data that will be sent to user space
 struct event {
     u32 ip_src;
-    enum event_type type;
+    enum decision decision;
 };
+
+// naive implementation, array based, O(n) search complexity
+// in real world, we would use a hash map with O(1) search complexity
+bool is_ip_allowed(u32 ip) {
+    // content dynamically generated, based on rule
+    u32 allowedIps[] = { 
+        // ...
+    }
+
+    // allowedIps array length in c
+    allowedIpsLen = sizeof(allowedIps) / sizeof(allowedIps[0]);
+
+    for (u32 i = 0; i < allowedIpsLen; i++) {
+        if (allowedIps[i] == ip) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+SEC("xdp")
+int filter_ip(struct xdp_md *ctx) {
+    void *data = (void *)(long)ctx->data;
+    void *data_end = (void *)(long)ctx->data_end;
+
+    struct iphdr *iph = data + sizeof(struct ethhdr);
+
+    ip = get_source_ip(iph);
+    is_allowed = is_ip_allowed(ip);
+
+    struct event data = {
+        .ip_src = ip,
+        .decision = is_allowed ? ALLOWED : BLOCKED,
+    };
+    output.perf_submit(ctx, &data, sizeof(data)); 
+
+    return is_allowed ? XDP_PASS : XDP_DROP;
+}
+
 ```
 
 ## ebpf programs
@@ -166,7 +219,7 @@ There are few places where ebpf programs can be attached to. <br>
 We need to decide on performance and maintainability trade-offs when choosing the right place for ebpf programs.
 
 ### XDP
-Works only for incomming traffic. 
+Works only for incomming traffic. It's the fastest way to process packets because it's done before packet is processed by kernel's network stack.
 
 `xdp_md` struct exposes data about the packet:
 - `ethhdr` - ethernet header
@@ -175,7 +228,7 @@ Works only for incomming traffic.
 - `udphdr` - UDP header
 - `icmphdr` - ICMP header
 
-It allows to realively easdily filter traffic based on L3 and L4 criteria.
+It allows to realively easily filter traffic based on L3 and L4 criteria.
 
 ### Traffic control
 Works for both incomming and outgoing traffic.
@@ -208,7 +261,7 @@ No limitations, as long as the kernel supports eBPF.
 Depending on scope of features provided, different kernel versions may be required: [BPF Features by Linux Kernel Version](https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md)
 ## Hardware
 The TOOL is hardware agnostic.<br>
-SmartNIC can significantly improve performance of XDP programs because it offloads packet processing from CPU to NIC.
+SmartNIC can improve performance of XDP programs because it offloads packet processing from CPU to NIC.
 ## Scalability
 Need to be tested in test environment with network traffic generator against various hardware configurations.
 
